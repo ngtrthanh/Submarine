@@ -425,6 +425,7 @@ jobs:
       #   SUBMARINE_KEY_ALIAS           — alias inside the keystore
       #   SUBMARINE_KEY_PASSWORD        — key password
       - name: Materialize release keystore
+        id: signing
         shell: bash
         env:
           SUBMARINE_KEYSTORE_B64: ${{ secrets.SUBMARINE_KEYSTORE_B64 }}
@@ -438,10 +439,11 @@ jobs:
           [ -z "$SUBMARINE_KEY_ALIAS" ]         && missing+=("SUBMARINE_KEY_ALIAS")
           [ -z "$SUBMARINE_KEY_PASSWORD" ]      && missing+=("SUBMARINE_KEY_PASSWORD")
           if [ "${#missing[@]}" -gt 0 ]; then
-            echo "::error::Missing GitHub Secrets required for signing: ${missing[*]}"
-            echo "::error::Add them at https://github.com/${{ github.repository }}/settings/secrets/actions"
-            exit 1
+            echo "::notice::Android release skipped: missing signing secrets: ${missing[*]}"
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "signed=true" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/signing"
           echo "$SUBMARINE_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/signing/release.jks"
           if [ ! -s "$RUNNER_TEMP/signing/release.jks" ]; then
@@ -463,6 +465,7 @@ jobs:
       # becomes a goal later, re-add `android:build:aab` to package.json
       # and the matching find/copy loop here.
       - name: Build Android APK
+        if: steps.signing.outputs.signed == 'true'
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
@@ -472,6 +475,7 @@ jobs:
         run: npm run android:build
 
       - name: Stage Android artifacts
+        if: steps.signing.outputs.signed == 'true'
         shell: bash
         run: |
           mkdir -p artifacts
@@ -500,6 +504,7 @@ jobs:
           ls -la artifacts/
 
       - name: Upload artifacts
+        if: steps.signing.outputs.signed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: submarine-android
