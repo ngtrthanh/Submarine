@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle }
 import { createPortal } from "react-dom";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { File as FileIcon, Download, Upload, AlertTriangle, Check, X, Ban, Folder, FolderUp, Rows, LayoutPanelTop } from "lucide-react";
+import { File as FileIcon, Download, Upload, AlertTriangle, Check, X, Ban, Folder, FolderUp } from "lucide-react";
 import FilePanel, { ActiveDrag, FilePanelHandle } from "./FilePanel";
 import MirrorsPanel from "./MirrorsPanel";
 import { createLocalProvider } from "../fs/localProvider";
@@ -28,8 +28,6 @@ interface SftpWorkspaceProps {
 }
 
 type SftpView = "files" | "mirror";
-type FilesLayout = "tabs" | "split";
-type FilesSide = "local" | "remote";
 
 // Cursor-following drag ghost, isolated into its own component so that the
 // per-mousemove position updates re-render ONLY this tiny node — not the whole
@@ -73,36 +71,9 @@ const SftpWorkspace = ({ sessionId, disabled = false, serverId = 0, mirrorsConfi
   // Active sub-tab. Files is the default (the common workflow); Mirror is
   // for the per-server one-way replication setup.
   const [view, setView] = useState<SftpView>("files");
-  // Files layout: "tabs" (one side full height) is the default because the
-  // side panel is narrow on most desktop setups and "split" squeezed each
-  // FilePanel into 5-6 rows. "split" stays available for users who want
-  // simultaneous Local+Remote visibility (drag-drop still works there).
-  // Persisted globally (not per-session) — pure layout preference.
-  const [layout, setLayout] = useState<FilesLayout>(() => {
-    try {
-      const v = localStorage.getItem("submarine-sftp-layout");
-      return v === "split" ? "split" : "tabs";
-    } catch { return "tabs"; }
-  });
-  const setLayoutPersisted = (l: FilesLayout) => {
-    setLayout(l);
-    try { localStorage.setItem("submarine-sftp-layout", l); } catch { /* quota — ignore */ }
-  };
-  // Active side in tabs mode. We persist it per (session) so the user
-  // returns to the side they were last using, not always Local.
-  const sideStorageKey = `submarine-sftp-side-${sessionId}`;
-  const [activeSide, setActiveSide] = useState<FilesSide>(() => {
-    try {
-      const v = localStorage.getItem(sideStorageKey);
-      return v === "remote" ? "remote" : "local";
-    } catch { return "local"; }
-  });
-  const setActiveSidePersisted = (s: FilesSide) => {
-    setActiveSide(s);
-    try { localStorage.setItem(sideStorageKey, s); } catch { /* ignore */ }
-  };
-  // Providers are created once per session so the panels' provider identity
-  // is stable across renders (the FilePanel's load-on-mount effect keys off it).
+  // File Manager is intentionally dual-pane: Local and Remote stay visible
+  // together so copy/move work like WinSCP/Commander instead of hiding one
+  // endpoint behind tabs. This also makes drag-and-drop discoverable.
   const localProvider = useMemo(() => createLocalProvider(), []);
   const remoteProvider = useMemo(() => createRemoteProvider(sessionId), [sessionId]);
 
@@ -400,6 +371,7 @@ const SftpWorkspace = ({ sessionId, disabled = false, serverId = 0, mirrorsConfi
             onPathChange={(p) => saveDir("remote", p)}
             getOppositeDir={() => localRef.current?.currentDir()}
           />
+        </div>
         </div>
       </div>
 
