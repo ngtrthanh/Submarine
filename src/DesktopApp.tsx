@@ -20,6 +20,8 @@ import { NodeGrid } from "./components/NodeGrid";
 import AddNodePanel from "./components/AddNodePanel";
 import TerminalView from "./components/TerminalView";
 import SettingsPanel from "./components/SettingsPanel";
+import KeyFileImport from "./components/KeyFileImport";
+import { clampInfoFontSize, DEFAULT_INFO_FONT } from "./util/appearance";
 import ProfilePanel from "./components/ProfilePanel";
 import { SessionView } from "./components/SessionView";
 import MonitoringPanel from "./components/MonitoringPanel";
@@ -223,6 +225,9 @@ function DesktopApp() {
 
   const [newNode, setNewNode] = useState(defaultNode);
   const [appSettings, setAppSettings] = useState({
+    theme: localStorage.getItem('submarine-theme') === 'light' ? 'light' : 'dark',
+    serverInfoFontSize: clampInfoFontSize(localStorage.getItem('submarine-info-font-size') || '13'),
+    serverInfoFontFamily: localStorage.getItem('submarine-info-font-family') || DEFAULT_INFO_FONT,
     primaryColor: localStorage.getItem('submarine-primary-color') || '#60a5fa',
     backgroundColor: localStorage.getItem('submarine-bg-color') || '#0a0a0c',
     terminalFontSize: parseInt(localStorage.getItem('submarine-terminal-font-size') || '14'),
@@ -235,10 +240,18 @@ function DesktopApp() {
   });
 
   useEffect(() => {
+    const light = appSettings.theme === 'light';
+    document.documentElement.dataset.theme = appSettings.theme;
+    const infoSize = clampInfoFontSize(appSettings.serverInfoFontSize);
+    document.documentElement.style.setProperty('--server-info-font-size', `${infoSize}px`);
+    document.documentElement.style.setProperty('--server-info-font-family', appSettings.serverInfoFontFamily.trim() || DEFAULT_INFO_FONT);
+    localStorage.setItem('submarine-theme', appSettings.theme);
+    localStorage.setItem('submarine-info-font-size', String(infoSize));
+    localStorage.setItem('submarine-info-font-family', appSettings.serverInfoFontFamily);
     const rgb = hexToRgb(appSettings.primaryColor);
     document.documentElement.style.setProperty('--primary', rgb);
     document.documentElement.style.setProperty('--primary-hex', appSettings.primaryColor);
-    document.documentElement.style.setProperty('--background', appSettings.backgroundColor);
+    document.documentElement.style.setProperty('--background', light ? '#f4f4f5' : appSettings.backgroundColor);
     localStorage.setItem('submarine-primary-color', appSettings.primaryColor);
     localStorage.setItem('submarine-bg-color', appSettings.backgroundColor);
     localStorage.setItem('submarine-terminal-font-size', appSettings.terminalFontSize.toString());
@@ -2635,6 +2648,16 @@ function DesktopApp() {
               <label className="text-[12px] font-bold text-zinc-400 ml-1">Name</label>
               <input type="text" className="w-full h-10 bg-black rounded-lg px-3 text-[13px] text-white border border-white/10 outline-none focus:border-primary/50 focus:bg-zinc-900/50 transition-all shadow-inner" placeholder="e.g. My laptop key" value={editKeyData.name} onChange={e => setEditKeyData({ ...editKeyData, name: e.target.value })} />
             </div>
+            {isKeyPanelOpen && <KeyFileImport
+              key={editKeyData.id ?? 'new'}
+              onImport={(privateKey, filename) => {
+                setEditKeyData((current: any) => ({
+                  ...current, name: current.name || filename,
+                  private_key: privateKey, public_key: '', passphrase: '',
+                }));
+                setFormError('');
+              }}
+            />}
             <div className="space-y-1.5">
               <label className="text-[12px] font-bold text-zinc-400 ml-1">Public key</label>
               <textarea className="w-full h-24 bg-black rounded-lg p-3 text-[13px] text-zinc-400 font-mono border border-white/10 outline-none focus:border-primary/50 focus:bg-zinc-900/50 transition-all shadow-inner custom-scrollbar resize-none" placeholder="ssh-ed25519 ..." value={editKeyData.public_key} onChange={e => setEditKeyData({ ...editKeyData, public_key: e.target.value })} />

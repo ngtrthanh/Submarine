@@ -970,7 +970,7 @@ const InfoPanel = ({ sessionId, disabled, visible = true, onOpenContainerTermina
 
       {SubTabStrip}
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 select-text">
+      <div className="server-info-content flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 select-text">
         {disabled && (
           <BannerIcon tone="amber" icon={<AlertTriangle size={14} />}>
             Session is not connected. Reconnect to fetch server info.
@@ -1533,7 +1533,7 @@ const PortsTab = ({ data, sessionId, onRefresh }: { data: PortsData; sessionId: 
           // slack. `min-w` keeps it readable, scrolling only when the pane is
           // genuinely too narrow.
           <div className="overflow-x-auto custom-scrollbar -mx-1 px-1">
-            <table className="w-full min-w-[460px] table-fixed border-collapse text-[11px] font-mono">
+            <table className="w-full min-w-[max(460px,calc(var(--server-info-font-size)*42))] table-fixed border-collapse text-[11px] font-mono">
               <thead>
                 <tr className="text-left text-[9px] uppercase tracking-wider text-zinc-500 border-b border-white/10">
                   <th className="font-bold px-2 py-1.5 w-[46px]">Proto</th>

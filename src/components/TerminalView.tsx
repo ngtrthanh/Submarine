@@ -1,3 +1,4 @@
+import { terminalTheme } from "../util/appearance";
 import { useEffect, useRef, useState } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -361,12 +362,7 @@ const TerminalView = ({
       cursorBlink: true,
       fontSize: parseInt(localStorage.getItem('submarine-terminal-font-size') || '14'),
       fontFamily: 'Consolas, "Courier New", monospace',
-      theme: {
-        background: '#09090b',
-        foreground: '#e4e4e7',
-        cursor: '#60a5fa',
-        selectionBackground: 'rgba(96, 165, 250, 0.3)',
-      },
+      theme: terminalTheme(),
       allowProposedApi: true
     });
 
@@ -690,6 +686,7 @@ const TerminalView = ({
     
     // Handle Settings Change
     const handleSettingsChange = () => {
+      term.options.theme = terminalTheme();
       const newSize = parseInt(localStorage.getItem('submarine-terminal-font-size') || '14');
       if (term.options.fontSize !== newSize) {
         term.options.fontSize = newSize;

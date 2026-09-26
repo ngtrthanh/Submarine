@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --server-info-font-size: 13px;
+  --server-info-font-family: Consolas, "Courier New", monospace;
+}
+
+.server-info-content,
+.server-info-content :where(div, span, p, pre, code, table, th, td, label, button, input, select, textarea, a, h1, h2, h3, h4) {
+  font-family: var(--server-info-font-family) !important;
+  font-size: var(--server-info-font-size) !important;
+}
+
+:root[data-theme="light"],
+:root[data-theme="light"] body,
+:root[data-theme="light"] #root {
+  color-scheme: light;
+  background-color: #f4f4f5;
+  color: #18181b;
+}
+
+:root[data-theme="light"] select option,
+:root[data-theme="light"] select optgroup {
+  background-color: #ffffff;
+  color: #18181b;
+}
+
+:root[data-theme="light"] input:-webkit-autofill {
+  -webkit-text-fill-color: #18181b;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+}
+
+/* Modal scrims remain translucent ink, independent of the surface palette. */
+:root[data-theme="light"] .bg-black\/80 {
+  background-color: rgb(24 24 27 / 0.55);
+}
+
 /* Native <select> renders its dropdown via the OS theme, which defaults
    to a white list — our dark form text becomes unreadable against it.
    Style the option rows directly so the dropdown matches the panels.

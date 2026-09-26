@@ -1,3 +1,4 @@
+import { clampInfoFontSize, DEFAULT_INFO_FONT } from "../util/appearance";
 import { Settings, Palette, RefreshCw, Pipette, List, Cloud } from "lucide-react";
 
 const SettingsPanel = ({ settings, setSettings, onOpenLogs }: any) => {
@@ -43,6 +44,16 @@ const SettingsPanel = ({ settings, setSettings, onOpenLogs }: any) => {
           </div>
 
           <div className="bg-[#121215] border border-white/5 rounded-2xl p-6 space-y-8 shadow-xl">
+            <div className="space-y-2">
+              <label htmlFor="app-theme" className="text-[11px] font-bold text-zinc-400 uppercase">Appearance</label>
+              <select id="app-theme" value={settings.theme || 'dark'}
+                onChange={e => setSettings({ ...settings, theme: e.target.value,
+                  primaryColor: e.target.value === 'light' ? '#1d4ed8' : '#60a5fa' })}
+                className="w-full h-10 bg-black border border-white/10 rounded-lg px-3 text-sm text-white">
+                <option value="dark">Dark</option><option value="light">Light</option>
+              </select>
+              <p className="text-[12px] text-zinc-400">Theme applies to the app and terminals. Switching selects a matching accent; you can customize it below.</p>
+            </div>
             {/* Accent Color */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -78,7 +89,7 @@ const SettingsPanel = ({ settings, setSettings, onOpenLogs }: any) => {
             {/* Background Theme */}
             <div className="space-y-4 pt-6 border-t border-white/5">
               <div className="flex justify-between items-center">
-                <label className="text-[11px] font-black text-zinc-500 uppercase tracking-wider">Background Theme</label>
+                <label className="text-[11px] font-black text-zinc-500 uppercase tracking-wider">Dark Background</label>
                 <div className="flex items-center gap-2">
                   <input 
                     type="color" 
@@ -105,6 +116,42 @@ const SettingsPanel = ({ settings, setSettings, onOpenLogs }: any) => {
                   />
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="break-inside-avoid space-y-3 mb-4 sm:mb-8">
+          <div className="flex items-center gap-2 text-zinc-400 font-bold uppercase tracking-widest text-xs">
+            <Settings size={14} /> Server Info
+          </div>
+          <div className="bg-[#121215] border border-white/5 rounded-2xl p-6 space-y-4 shadow-xl">
+            <div className="space-y-2">
+              <label htmlFor="info-font-family" className="text-[11px] font-bold text-zinc-400 uppercase">Font name / family</label>
+              <input id="info-font-family" list="info-fonts" type="text"
+                value={settings.serverInfoFontFamily ?? DEFAULT_INFO_FONT}
+                onChange={e => setSettings({ ...settings, serverInfoFontFamily: e.target.value })}
+                className="w-full h-10 bg-black border border-white/10 rounded-lg px-3 text-sm text-white" />
+              <datalist id="info-fonts">
+                <option value={DEFAULT_INFO_FONT} /><option value="Segoe UI, sans-serif" />
+                <option value="Arial, sans-serif" /><option value="Cascadia Code, monospace" />
+                <option value="JetBrains Mono, monospace" /><option value="system-ui, sans-serif" />
+              </datalist>
+              <p className="text-[12px] text-zinc-400">Use a font installed on this computer. Unavailable fonts use the fallback family.</p>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="info-font-size" className="text-[11px] font-bold text-zinc-400 uppercase">Font size (10–24 px)</label>
+              <input id="info-font-size" type="number" min="10" max="24" step="1"
+                value={settings.serverInfoFontSize ?? 13}
+                onChange={e => setSettings({ ...settings, serverInfoFontSize: clampInfoFontSize(e.target.value || 13) })}
+                className="w-20 h-9 bg-black border border-white/10 rounded-lg px-2 text-sm text-white" />
+            </div>
+            <input aria-label="Server Info font size" type="range" min="10" max="24"
+              value={settings.serverInfoFontSize ?? 13}
+              onChange={e => setSettings({ ...settings, serverInfoFontSize: Number(e.target.value) })}
+              className="w-full accent-primary" />
+            <div className="server-info-content rounded-lg bg-black border border-white/10 p-3 text-zinc-200 overflow-x-auto">
+              <div>Server Info preview</div><div>CPU: 4 cores · RAM: 8 GiB</div>
+              <div>192.168.1.10 · /var/log</div>
             </div>
           </div>
         </section>
@@ -211,7 +258,7 @@ const SettingsPanel = ({ settings, setSettings, onOpenLogs }: any) => {
             <button
               onClick={() => {
                 if(window.confirm('Reset all UI customizations?')) {
-                  setSettings((s: any) => ({ ...s, primaryColor: '#60a5fa', backgroundColor: '#0a0a0c', terminalFontSize: 14 }));
+                  setSettings((s: any) => ({ ...s, primaryColor: '#60a5fa', backgroundColor: '#0a0a0c', terminalFontSize: 14, theme: 'dark', serverInfoFontSize: 13, serverInfoFontFamily: DEFAULT_INFO_FONT }));
                 }
               }}
               className="px-4 h-9 bg-zinc-900 border border-white/5 text-zinc-300 rounded-xl text-xs font-bold uppercase hover:bg-white/5 transition-all w-full"
