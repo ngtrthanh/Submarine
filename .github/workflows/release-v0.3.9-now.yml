@@ -1,5 +1,5 @@
 name: Release v0.3.9 now
-# one-shot dispatcher
+# one-shot dispatcher retry after Android optional-signing fix
 
 on:
   push:
