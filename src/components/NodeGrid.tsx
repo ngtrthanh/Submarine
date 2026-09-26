@@ -264,7 +264,7 @@ export const NodeGrid = ({ servers, folders, activeFolderId: activeFolderIdProp,
         key={`server-${s.id}`}
         data-sid={s.id}
         onClick={() => { if (draggedRef.current) return; onOpenServer(s); }}
-        className="group relative flex items-center gap-3 h-16 pl-3.5 pr-2 rounded-xl bg-gradient-to-br from-[#17171c] to-[#121216] border border-white/5 hover:border-primary/40 hover:bg-white/[0.015] transition-colors duration-150 cursor-pointer overflow-hidden"
+        className="server-card group relative flex items-center gap-3 h-16 pl-3.5 pr-2 rounded-xl bg-gradient-to-br from-[#17171c] to-[#121216] border border-white/5 hover:border-primary/40 hover:bg-white/[0.015] transition-colors duration-150 cursor-pointer overflow-hidden"
       >
         {/* Per-server colour accent: a crisp left bar. */}
         <span aria-hidden className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: accent }} />
@@ -346,7 +346,7 @@ export const NodeGrid = ({ servers, folders, activeFolderId: activeFolderIdProp,
     return (
       <div
         onClick={() => { if (!isRenaming) setActiveFolderId(f.id); }}
-        className="group relative flex items-center gap-3 h-16 pl-3.5 pr-2 rounded-xl bg-gradient-to-br from-[#1c1c22] to-[#141418] border border-white/5 hover:border-primary/40 hover:bg-white/[0.015] transition-colors duration-150 cursor-pointer overflow-hidden"
+        className="folder-card group relative flex items-center gap-3 h-16 pl-3.5 pr-2 rounded-xl bg-gradient-to-br from-[#1c1c22] to-[#141418] border border-white/5 hover:border-primary/40 hover:bg-white/[0.015] transition-colors duration-150 cursor-pointer overflow-hidden"
       >
         <span aria-hidden className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: accent }} />
 
@@ -437,7 +437,7 @@ export const NodeGrid = ({ servers, folders, activeFolderId: activeFolderIdProp,
         <input
           type="text"
           placeholder="Search servers…"
-          className="w-full h-9 bg-[#1c1c21] border border-white/10 rounded-lg pl-9 pr-4 text-[13px] text-zinc-100 outline-none focus:border-primary/50 focus:bg-[#16161a] transition-all placeholder:text-zinc-600 shadow-inner"
+          className="node-search w-full h-9 bg-[#1c1c21] border border-white/10 rounded-lg pl-9 pr-4 text-[13px] text-zinc-100 outline-none focus:border-primary/50 focus:bg-[#16161a] transition-all placeholder:text-zinc-600 shadow-inner"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

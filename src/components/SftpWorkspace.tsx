@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle }
 import { createPortal } from "react-dom";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { File as FileIcon, Download, Upload, AlertTriangle, Check, X, Ban, Folder, FolderUp, Rows, LayoutPanelTop } from "lucide-react";
+import { File as FileIcon, Download, Upload, AlertTriangle, Check, X, Ban, Folder, FolderUp } from "lucide-react";
 import FilePanel, { ActiveDrag, FilePanelHandle } from "./FilePanel";
 import MirrorsPanel from "./MirrorsPanel";
 import { createLocalProvider } from "../fs/localProvider";
@@ -28,8 +28,6 @@ interface SftpWorkspaceProps {
 }
 
 type SftpView = "files" | "mirror";
-type FilesLayout = "tabs" | "split";
-type FilesSide = "local" | "remote";
 
 // Cursor-following drag ghost, isolated into its own component so that the
 // per-mousemove position updates re-render ONLY this tiny node — not the whole
@@ -73,36 +71,9 @@ const SftpWorkspace = ({ sessionId, disabled = false, serverId = 0, mirrorsConfi
   // Active sub-tab. Files is the default (the common workflow); Mirror is
   // for the per-server one-way replication setup.
   const [view, setView] = useState<SftpView>("files");
-  // Files layout: "tabs" (one side full height) is the default because the
-  // side panel is narrow on most desktop setups and "split" squeezed each
-  // FilePanel into 5-6 rows. "split" stays available for users who want
-  // simultaneous Local+Remote visibility (drag-drop still works there).
-  // Persisted globally (not per-session) — pure layout preference.
-  const [layout, setLayout] = useState<FilesLayout>(() => {
-    try {
-      const v = localStorage.getItem("submarine-sftp-layout");
-      return v === "split" ? "split" : "tabs";
-    } catch { return "tabs"; }
-  });
-  const setLayoutPersisted = (l: FilesLayout) => {
-    setLayout(l);
-    try { localStorage.setItem("submarine-sftp-layout", l); } catch { /* quota — ignore */ }
-  };
-  // Active side in tabs mode. We persist it per (session) so the user
-  // returns to the side they were last using, not always Local.
-  const sideStorageKey = `submarine-sftp-side-${sessionId}`;
-  const [activeSide, setActiveSide] = useState<FilesSide>(() => {
-    try {
-      const v = localStorage.getItem(sideStorageKey);
-      return v === "remote" ? "remote" : "local";
-    } catch { return "local"; }
-  });
-  const setActiveSidePersisted = (s: FilesSide) => {
-    setActiveSide(s);
-    try { localStorage.setItem(sideStorageKey, s); } catch { /* ignore */ }
-  };
-  // Providers are created once per session so the panels' provider identity
-  // is stable across renders (the FilePanel's load-on-mount effect keys off it).
+  // File Manager is intentionally dual-pane: Local and Remote stay visible
+  // together so copy/move work like WinSCP/Commander instead of hiding one
+  // endpoint behind tabs. This also makes drag-and-drop discoverable.
   const localProvider = useMemo(() => createLocalProvider(), []);
   const remoteProvider = useMemo(() => createRemoteProvider(sessionId), [sessionId]);
 
@@ -310,96 +281,42 @@ const SftpWorkspace = ({ sessionId, disabled = false, serverId = 0, mirrorsConfi
         </button>
       </div>
 
-      {/* Files view — dual-pane browser. Stays mounted when Mirror is on top
-          so directory state and selection don't reset across tab toggles.
-          Both FilePanels are ALWAYS mounted (one is just CSS-hidden in
-          tabs mode) so cd state, scroll position, and selection survive a
-          tab toggle. */}
+      {/* Files view — always-on dual pane. Desktop uses side-by-side columns;
+          narrow widths stack the panes so both endpoints remain visible. */}
       <div className={`${view === "files" ? "flex-1 flex flex-col min-h-0" : "hidden"}`}>
-        {/* Layout toolbar: Local|Remote pills in tabs mode (or a static
-            label in split mode), plus the global layout toggle on the
-            right. The toggle's label is the DESTINATION mode so the
-            user can predict what clicking will do. */}
-        <div className="shrink-0 h-10 sm:h-8 flex items-stretch border-b border-white/5 bg-black/20">
-          {layout === "tabs" ? (
-            <div className="flex-1 grid grid-cols-2">
-              <button
-                onClick={() => setActiveSidePersisted("local")}
-                className={`h-full flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
-                  activeSide === "local"
-                    ? "text-emerald-300 bg-emerald-500/5 border-b border-emerald-400"
-                    : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03] border-b border-transparent"
-                }`}
-              >
-                <Folder size={11} /> Local
-              </button>
-              <button
-                onClick={() => setActiveSidePersisted("remote")}
-                className={`h-full flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
-                  activeSide === "remote"
-                    ? "text-sky-300 bg-sky-500/5 border-b border-sky-400"
-                    : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03] border-b border-transparent"
-                }`}
-              >
-                <Folder size={11} /> Remote
-              </button>
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center px-3 text-[9.5px] font-bold uppercase tracking-widest text-zinc-500">
-              Local + Remote
-            </div>
-          )}
-          <button
-            onClick={() => setLayoutPersisted(layout === "tabs" ? "split" : "tabs")}
-            title={layout === "tabs" ? "Show both panels stacked (drag-drop between them)" : "Switch to tabbed view (one panel at full height)"}
-            className="px-3 border-l border-white/5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:bg-white/5 hover:text-white flex items-center gap-1.5 transition-all shrink-0"
-          >
-            {layout === "tabs"
-              ? <><Rows size={11} /> Split</>
-              : <><LayoutPanelTop size={11} /> Tabs</>
-            }
-          </button>
+        <div className="shrink-0 h-8 grid grid-cols-2 border-b border-white/5 bg-black/20 text-[9.5px] font-bold uppercase tracking-widest text-zinc-500">
+          <div className="flex items-center gap-1.5 px-3 border-r border-white/5">
+            <Folder size={11} className="text-emerald-500" /> Local
+          </div>
+          <div className="flex items-center gap-1.5 px-3">
+            <Folder size={11} className="text-sky-500" /> Remote
+          </div>
         </div>
-
-        {/* Local panel — visible in split mode (top), or in tabs mode when
-            Local is the active side. Hidden via CSS (not unmounted) when
-            on the inactive tab so its directory and provider state
-            survive a side-swap. */}
-        <div className={
-          layout === "split"
-            ? "flex-1 min-h-0 border-b border-white/10"
-            : activeSide === "local" ? "flex-1 min-h-0" : "hidden"
-        }>
-          <FilePanel
-            ref={localRef}
-            provider={localProvider}
-            // The local pane also needs sessionId so its bulk-upload button can
-            // invoke sftp_upload_file / sftp_upload_dir on the right session.
-            // Without this the Upload button silently no-ops on the first
-            // guard (`if (!sessionId) return`).
-            sessionId={sessionId}
-            disabled={disabled}
-            onDragMove={handleDragMove}
-            initialPath={savedDirsRef.current.local}
-            onPathChange={(p) => saveDir("local", p)}
-            getOppositeDir={() => remoteRef.current?.currentDir()}
-          />
-        </div>
-        <div className={
-          layout === "split"
-            ? "flex-1 min-h-0"
-            : activeSide === "remote" ? "flex-1 min-h-0" : "hidden"
-        }>
-          <FilePanel
-            ref={remoteRef}
-            provider={remoteProvider}
-            sessionId={sessionId}
-            disabled={disabled}
-            onDragMove={handleDragMove}
-            initialPath={savedDirsRef.current.remote}
-            onPathChange={(p) => saveDir("remote", p)}
-            getOppositeDir={() => localRef.current?.currentDir()}
-          />
+        <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2">
+          <div className="min-h-0 border-b md:border-b-0 md:border-r border-white/10">
+            <FilePanel
+              ref={localRef}
+              provider={localProvider}
+              sessionId={sessionId}
+              disabled={disabled}
+              onDragMove={handleDragMove}
+              initialPath={savedDirsRef.current.local}
+              onPathChange={(p) => saveDir("local", p)}
+              getOppositeDir={() => remoteRef.current?.currentDir()}
+            />
+          </div>
+          <div className="min-h-0">
+            <FilePanel
+              ref={remoteRef}
+              provider={remoteProvider}
+              sessionId={sessionId}
+              disabled={disabled}
+              onDragMove={handleDragMove}
+              initialPath={savedDirsRef.current.remote}
+              onPathChange={(p) => saveDir("remote", p)}
+              getOppositeDir={() => localRef.current?.currentDir()}
+            />
+          </div>
         </div>
       </div>
 

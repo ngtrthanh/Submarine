@@ -204,3 +204,97 @@ select optgroup {
   scrollbar-width: thin !important;
   scrollbar-color: rgba(96, 165, 250, 0.18) transparent !important;
 }
+
+
+/* Light theme surface pass.
+   The app historically hard-coded dark Tailwind utility colors in many cards.
+   These semantic overrides keep the existing component structure while giving
+   light mode real surfaces and WCAG-friendly foreground contrast. */
+:root[data-theme="light"] .server-card,
+:root[data-theme="light"] .folder-card {
+  background-image: none !important;
+  background-color: #ffffff !important;
+  border-color: #d4d4d8 !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+:root[data-theme="light"] .server-card:hover,
+:root[data-theme="light"] .folder-card:hover {
+  background-color: #fafafa !important;
+  border-color: rgb(var(--primary) / 0.45) !important;
+}
+
+:root[data-theme="light"] .server-card .text-zinc-100,
+:root[data-theme="light"] .folder-card .text-zinc-100 {
+  color: #18181b !important;
+}
+
+:root[data-theme="light"] .server-card .text-zinc-300,
+:root[data-theme="light"] .folder-card .text-zinc-300,
+:root[data-theme="light"] .server-card .text-zinc-400,
+:root[data-theme="light"] .folder-card .text-zinc-400 {
+  color: #52525b !important;
+}
+
+:root[data-theme="light"] .server-card .text-zinc-500,
+:root[data-theme="light"] .folder-card .text-zinc-500,
+:root[data-theme="light"] .server-card .text-zinc-600,
+:root[data-theme="light"] .folder-card .text-zinc-600 {
+  color: #71717a !important;
+}
+
+:root[data-theme="light"] .node-search {
+  background: #ffffff !important;
+  color: #18181b !important;
+  border-color: #d4d4d8 !important;
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.03);
+}
+
+:root[data-theme="light"] .node-search:focus {
+  background: #ffffff !important;
+}
+
+:root[data-theme="light"] .node-search::placeholder {
+  color: #71717a !important;
+}
+
+/* Settings currently contains several dark-only cards/inputs. Until the
+   planned settings component split lands, normalize the major surfaces here. */
+:root[data-theme="light"] [class*="bg-[#121215]"],
+:root[data-theme="light"] [class*="bg-[#09090b]"],
+:root[data-theme="light"] [class~="bg-black"] {
+  background-color: #ffffff !important;
+}
+
+:root[data-theme="light"] [class*="border-white/5"],
+:root[data-theme="light"] [class*="border-white/10"] {
+  border-color: #d4d4d8 !important;
+}
+
+:root[data-theme="light"] .text-white,
+:root[data-theme="light"] .text-zinc-100,
+:root[data-theme="light"] .text-zinc-200 {
+  color: #18181b !important;
+}
+
+:root[data-theme="light"] .text-zinc-300,
+:root[data-theme="light"] .text-zinc-400 {
+  color: #52525b !important;
+}
+
+:root[data-theme="light"] .text-zinc-500,
+:root[data-theme="light"] .text-zinc-600 {
+  color: #71717a !important;
+}
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select {
+  color: #18181b;
+}
+
+:root[data-theme="light"] .server-info-content {
+  background: #ffffff !important;
+  color: #27272a !important;
+  border-color: #d4d4d8 !important;
+}
