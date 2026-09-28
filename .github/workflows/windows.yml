@@ -1,4 +1,4 @@
-name: Windows build
+name: Windows portable
 
 on:
   push:
@@ -17,29 +17,34 @@ permissions:
   contents: read
 
 concurrency:
-  group: windows-${{ github.ref }}
+  group: windows-portable-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  windows:
+  windows-portable:
     runs-on: windows-latest
     timeout-minutes: 60
     env:
       CARGO_INCREMENTAL: '0'
       CARGO_TERM_COLOR: always
+      PORTABLE_VERSION: '0.3.9'
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: npm
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-          key: windows-full-ssh
+          key: windows-portable-full-ssh
+
       - name: Check Perl for vendored OpenSSL
         shell: pwsh
         run: |
@@ -49,22 +54,69 @@ jobs:
           } else {
             perl -v
           }
-      - run: npm ci
-      - name: Build Windows installer
-        run: npm run tauri -- build --target x86_64-pc-windows-msvc --features full-ssh-algos --bundles nsis
-      - name: Stage installer and checksums
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Stamp portable version
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force artifacts | Out-Null
-          Copy-Item src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe artifacts/
-          "Source commit: $env:GITHUB_SHA" | Set-Content artifacts/BUILD.txt
-          Get-ChildItem artifacts/*.exe | ForEach-Object {
-            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
-            "$hash  $($_.Name)" | Add-Content artifacts/SHA256SUMS.txt
-          }
+          node -e "const fs=require('fs'); const v=process.env.PORTABLE_VERSION; let c=fs.readFileSync('src-tauri/Cargo.toml','utf8'); c=c.replace(/^version\s*=\s*\".*\"/m,'version = \"'+v+'\"'); fs.writeFileSync('src-tauri/Cargo.toml',c); const t=JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json','utf8')); t.version=v; fs.writeFileSync('src-tauri/tauri.conf.json',JSON.stringify(t,null,2)+'\n');"
+
+      - name: Build Windows x64 portable EXE
+        shell: pwsh
+        run: |
+          cargo build --manifest-path src-tauri/Cargo.toml --release --target x86_64-pc-windows-msvc --features full-ssh-algos
+
+      - name: Package portable ZIP
+        shell: pwsh
+        run: |
+          $exe = "src-tauri/target/x86_64-pc-windows-msvc/release/submarine.exe"
+          if (!(Test-Path $exe)) { throw "Portable executable not found: $exe" }
+
+          New-Item -ItemType Directory -Force -Path "artifacts/stage" | Out-Null
+          Copy-Item $exe "artifacts/stage/Submarine.exe"
+
+          @"
+          Submarine $env:PORTABLE_VERSION - Windows x64 portable
+
+          Run Submarine.exe directly. No installer is required.
+          Encrypted profiles and application data remain in the normal per-user Windows AppData location.
+          Microsoft Edge WebView2 Runtime is required and is normally already installed on current Windows 10/11 systems.
+
+          Source commit: $env:GITHUB_SHA
+          "@ | Set-Content "artifacts/stage/README-PORTABLE.txt"
+
+          $exeHash = (Get-FileHash "artifacts/stage/Submarine.exe" -Algorithm SHA256).Hash.ToLower()
+          "$exeHash  Submarine.exe" | Set-Content "artifacts/stage/SHA256SUMS.txt"
+
+          $zip = "Submarine-v$env:PORTABLE_VERSION-windows-x64-portable.zip"
+          Compress-Archive -Path "artifacts/stage/*" -DestinationPath "artifacts/$zip" -Force
+
+          $zipHash = (Get-FileHash "artifacts/$zip" -Algorithm SHA256).Hash.ToLower()
+          "$zipHash  $zip" | Set-Content "artifacts/SHA256SUMS.txt"
+          "Source commit: $env:GITHUB_SHA" | Set-Content "artifacts/BUILD.txt"
+          "Version: $env:PORTABLE_VERSION" | Add-Content "artifacts/BUILD.txt"
+
+      - name: Verify portable ZIP
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem artifacts/*-portable.zip | Select-Object -First 1
+          if (!$zip) { throw "Portable ZIP missing" }
+          $tmp = Join-Path $env:RUNNER_TEMP "submarine-portable-check"
+          Expand-Archive $zip.FullName -DestinationPath $tmp -Force
+          if (!(Test-Path "$tmp/Submarine.exe")) { throw "Submarine.exe missing from ZIP" }
+          if ((Get-Item "$tmp/Submarine.exe").Length -le 0) { throw "Submarine.exe is empty" }
+
       - uses: actions/upload-artifact@v4
         with:
-          name: Submarine-Windows-x64-${{ github.sha }}
-          path: artifacts/*
+          name: Submarine-Windows-x64-portable-${{ github.sha }}
+          path: |
+            artifacts/*-portable.zip
+            artifacts/SHA256SUMS.txt
+            artifacts/BUILD.txt
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
