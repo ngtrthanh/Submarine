@@ -1,4 +1,5 @@
 name: Windows portable
+# Windows-only portable artifact
 
 on:
   push:
