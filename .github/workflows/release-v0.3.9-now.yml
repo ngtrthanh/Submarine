@@ -1,5 +1,4 @@
-name: Release v0.3.9 now
-# one-shot dispatcher retry after Android optional-signing fix
+name: Build Windows portable now
 
 on:
   push:
@@ -15,8 +14,10 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch canonical release workflow
+      - name: Dispatch Windows portable workflow
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run release.yml             --repo ${{ github.repository }}             --ref main             -f version=v0.3.9             -f publish_release=true
+          gh workflow run windows.yml \
+            --repo ${{ github.repository }} \
+            --ref main
